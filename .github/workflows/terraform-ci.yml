@@ -1,0 +1,37 @@
+name: Terraform CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.0
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Region consistency check
+        run: |
+          if grep -rE 'eu-west-1' --include='*.tf' .; then
+            echo 'Found eu-west-1 in Terraform; primary region must stay us-east-1.'
+            exit 1
+          fi

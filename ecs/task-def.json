@@ -1,0 +1,49 @@
+{
+  "family": "prod-frontend",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::545009861547:role/prod-ecs-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::545009861547:role/prod-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "boiler-plate-frontend",
+      "image": "545009861547.dkr.ecr.us-east-1.amazonaws.com/boiler-plate/frontend:prod",
+      "essential": true,
+      "portMappings": [
+        {
+          "name": "boiler-plate-frontend",
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/prod-frontend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "systemControls": []
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "2048",
+  "memory": "4096",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "volumes": []
+} 
