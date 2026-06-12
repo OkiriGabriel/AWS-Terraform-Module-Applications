@@ -18,7 +18,7 @@ This module creates a production-ready Amazon EKS (Elastic Kubernetes Service) c
 
 ```hcl
 module "eks" {
-  source = "./modules/eks"
+  source = "./eks"
 
   cluster_name    = "my-eks-cluster"
   cluster_version = "1.28"

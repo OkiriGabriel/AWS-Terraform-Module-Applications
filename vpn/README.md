@@ -39,7 +39,7 @@ This module creates VPN connections including Site-to-Site VPN for connecting on
 
 ```hcl
 module "site_to_site_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "company-hq"
   vpc_id      = module.vpc.vpc_id
@@ -69,7 +69,7 @@ module "site_to_site_vpn" {
 
 ```hcl
 module "site_to_site_vpn_tgw" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "branch-office"
   vpc_id      = module.vpc.vpc_id
@@ -92,7 +92,7 @@ module "site_to_site_vpn_tgw" {
 
 ```hcl
 module "vpn_static" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "datacenter"
   vpc_id      = module.vpc.vpc_id
@@ -118,7 +118,7 @@ module "vpn_static" {
 
 ```hcl
 module "client_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "employee-vpn"
   vpc_id      = module.vpc.vpc_id
@@ -166,7 +166,7 @@ module "client_vpn" {
 
 ```hcl
 module "client_vpn_ad" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "corporate-vpn"
   vpc_id      = module.vpc.vpc_id

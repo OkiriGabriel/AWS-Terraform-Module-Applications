@@ -36,7 +36,7 @@ This module enables and configures AWS Inspector for automated security assessme
 
 ```hcl
 module "inspector" {
-  source = "./modules/inspector"
+  source = "./inspector"
 
   name_prefix = "my-org"
   
@@ -155,7 +155,7 @@ For AWS Organizations:
 ```hcl
 # In management account
 module "inspector_admin" {
-  source = "./modules/inspector"
+  source = "./inspector"
   
   delegated_admin_account_id = "123456789012"
   

@@ -4,7 +4,7 @@
 # Frontend Service (WordPress/WooCommerce) - Routes: / (Production only)
 module "ecs_frontend_service" {
   count  = terraform.workspace == "infrastructure-prod" ? 1 : 0
-  source = "./modules/ecs_service"
+  source = "./ecs_service"
 
   environment  = local.environment
   cluster_id   = aws_ecs_cluster.main[0].id
@@ -44,7 +44,7 @@ module "ecs_frontend_service" {
 # Backend API Service (REST API) - Routes: /api/* (Production only)
 module "ecs_backend_service" {
   count  = terraform.workspace == "infrastructure-prod" ? 1 : 0
-  source = "./modules/ecs_service"
+  source = "./ecs_service"
 
   environment  = local.environment
   cluster_id   = aws_ecs_cluster.main[0].id
@@ -84,7 +84,7 @@ module "ecs_backend_service" {
 # Admin Dashboard Service - Routes: /admin/* (Production only)
 module "ecs_admin_service" {
   count  = terraform.workspace == "infrastructure-prod" ? 1 : 0
-  source = "./modules/ecs_service"
+  source = "./ecs_service"
 
   environment  = local.environment
   cluster_id   = aws_ecs_cluster.main[0].id

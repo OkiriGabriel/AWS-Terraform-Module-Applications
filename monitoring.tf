@@ -8,7 +8,7 @@ locals {
 
 module "monitoring_server" {
   count  = local.monitoring_enabled ? 1 : 0
-  source = "./modules/monitoring"
+  source = "./monitoring"
 
   environment = local.environment
   vpc_id      = module.vpc.vpc_id

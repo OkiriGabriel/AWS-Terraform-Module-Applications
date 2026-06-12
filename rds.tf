@@ -1,6 +1,6 @@
 module "rds" {
   count  = terraform.workspace == "infrastructure-prod" ? 1 : 0
-  source = "./modules/rds"
+  source = "./rds"
 
   environment             = local.environment
   vpc_id                  = module.vpc.vpc_id

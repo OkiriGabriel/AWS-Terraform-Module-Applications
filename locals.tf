@@ -1,3 +1,13 @@
+# ============================================
+# LOCALS - ENVIRONMENT MAPPING
+# ============================================
+# This file maps Terraform workspaces to environment configurations
+# and consolidates all environment variables into reusable locals.
+#
+# Workspace mapping:
+# - "dev" or "infrastructure" → Development environment
+# - "prod" or "infrastructure-prod" → Production environment
+
 locals {
   # Map environments to workspace names
   env = {
@@ -5,10 +15,10 @@ locals {
     "infrastructure"      = local.dev
     "prod"                = local.prod
     "dev"                 = local.dev
+    "default"             = local.dev  # Default to dev if workspace not found
   }
 
-  # Get current environment settings
-  # infrastructure = dev, infrastructure-prod = prod
+  # Get current environment settings based on workspace
   current_env = try(local.env[terraform.workspace], local.dev)
 
   # Basic Settings

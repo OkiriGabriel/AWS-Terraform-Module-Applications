@@ -6,7 +6,7 @@
 # ============================================
 /*
 module "eks" {
-  source = "./modules/eks"
+  source = "./eks"
 
   cluster_name    = "${local.project_name}-eks-cluster"
   cluster_version = "1.28"
@@ -36,7 +36,7 @@ module "eks" {
 # ============================================
 /*
 module "guardduty" {
-  source = "./modules/guardduty"
+  source = "./guardduty"
 
   name_prefix = "${local.project_name}-guardduty"
   
@@ -61,7 +61,7 @@ module "guardduty" {
 # ============================================
 /*
 module "inspector" {
-  source = "./modules/inspector"
+  source = "./inspector"
 
   name_prefix = "${local.project_name}-inspector"
   
@@ -84,7 +84,7 @@ module "inspector" {
 /*
 # Example: Peer with another VPC
 module "vpc_peering" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id     = module.vpc.vpc_id
   accepter_vpc_id      = "vpc-xxxxxxxxx"  # Your other VPC ID
@@ -106,7 +106,7 @@ module "vpc_peering" {
 # ============================================
 /*
 module "site_to_site_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "${local.project_name}-vpn"
   vpc_id      = module.vpc.vpc_id
@@ -128,7 +128,7 @@ module "site_to_site_vpn" {
 # ============================================
 /*
 module "client_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "${local.project_name}-client-vpn"
   vpc_id      = module.vpc.vpc_id
@@ -176,7 +176,7 @@ module "client_vpn" {
 # ============================================
 /*
 module "transit_gateway" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name        = "${local.project_name}-tgw"
   description = "Transit Gateway for connecting multiple VPCs"
@@ -214,7 +214,7 @@ module "transit_gateway" {
 # Uncomment this section to enable all security features at once
 
 module "guardduty" {
-  source = "./modules/guardduty"
+  source = "./guardduty"
   name_prefix = "${local.project_name}-guardduty"
   enable_notifications = true
   notification_emails = ["security@example.com"]
@@ -222,7 +222,7 @@ module "guardduty" {
 }
 
 module "inspector" {
-  source = "./modules/inspector"
+  source = "./inspector"
   name_prefix = "${local.project_name}-inspector"
   resource_types = ["EC2", "ECR", "LAMBDA"]
   enable_notifications = true

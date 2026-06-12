@@ -170,31 +170,27 @@ Your AWS user/role needs permissions for:
 
 ```
 .
-├── modules/                    # Reusable Terraform modules
-│   ├── vpc/                   # VPC with subnets, NAT, IGW
-│   ├── eks/                   # Amazon EKS cluster
-│   ├── ecs_service/           # ECS service definition
-│   ├── alb/                   # Application Load Balancer
-│   ├── rds/                   # RDS database instances
-│   ├── elasticache/           # ElastiCache clusters
-│   ├── s3/                    # S3 buckets with policies
-│   ├── security_groups/       # Security group definitions
-│   ├── monitoring/            # CloudWatch dashboards & alarms
-│   ├── secrets_manager/       # Secrets management
-│   ├── dynamodb/             # DynamoDB tables
-│   ├── cloudfront_static/    # CloudFront distributions
-│   ├── guardduty/            # GuardDuty threat detection
-│   ├── inspector/            # Inspector vulnerability scanning
-│   ├── vpc_peering/          # VPC peering connections
-│   ├── vpn/                  # VPN connections
-│   └── transit_gateway/      # Transit Gateway setup
-├── environments/              # Environment-specific configurations
-│   ├── dev/
-│   ├── staging/
-│   └── prod/
-├── *.tf                       # Root module configurations
-├── vars_enviro_dev.tf        # Development variables
-├── vars_enviro_prod.tf       # Production variables
+├── vpc/                       # VPC with subnets, NAT, IGW
+├── eks/                       # Amazon EKS cluster
+├── ecs_service/               # ECS service definition
+├── alb/                       # Application Load Balancer
+├── rds/                       # RDS database instances
+├── elasticache/               # ElastiCache clusters
+├── s3/                        # S3 buckets with policies
+├── security_groups/           # Security group definitions
+├── monitoring/                # CloudWatch dashboards & alarms
+├── secrets_manager/           # Secrets management
+├── dynamodb/                  # DynamoDB tables
+├── cloudfront_static/         # CloudFront distributions
+├── guardduty/                 # GuardDuty threat detection
+├── inspector/                 # Inspector vulnerability scanning
+├── vpc_peering/               # VPC peering connections
+├── vpn/                       # VPN connections
+├── transit_gateway/           # Transit Gateway setup
+├── *.tf                       # Root infrastructure configurations
+├── vars_enviro_dev.tf         # Development variables
+├── vars_enviro_prod.tf        # Production variables
+├── examples.tf                # Usage examples for all modules
 └── README.md                  # This file
 ```
 
@@ -240,7 +236,7 @@ All examples are available in `examples.tf` - just uncomment the module you want
 
 ```hcl
 module "eks" {
-  source = "./modules/eks"
+  source = "./eks"
 
   cluster_name    = "${local.project_name}-eks-cluster"
   cluster_version = "1.28"
@@ -269,7 +265,7 @@ module "eks" {
 
 ```hcl
 module "guardduty" {
-  source = "./modules/guardduty"
+  source = "./guardduty"
 
   name_prefix = "${local.project_name}-guardduty"
   
@@ -293,7 +289,7 @@ module "guardduty" {
 
 ```hcl
 module "inspector" {
-  source = "./modules/inspector"
+  source = "./inspector"
 
   name_prefix = "${local.project_name}-inspector"
   
@@ -314,7 +310,7 @@ module "inspector" {
 
 ```hcl
 module "vpc_peering" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id     = module.vpc.vpc_id
   accepter_vpc_id      = "vpc-xxxxxxxxx"
@@ -335,7 +331,7 @@ module "vpc_peering" {
 
 ```hcl
 module "site_to_site_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "${local.project_name}-vpn"
   vpc_id      = module.vpc.vpc_id
@@ -356,7 +352,7 @@ module "site_to_site_vpn" {
 
 ```hcl
 module "client_vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   name_prefix = "${local.project_name}-client-vpn"
   vpc_id      = module.vpc.vpc_id
@@ -399,7 +395,7 @@ module "client_vpn" {
 
 ```hcl
 module "transit_gateway" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name        = "${local.project_name}-tgw"
   description = "Transit Gateway for connecting multiple VPCs"
@@ -432,7 +428,7 @@ module "transit_gateway" {
 ```hcl
 # Enable all security features
 module "guardduty" {
-  source          = "./modules/guardduty"
+  source          = "./guardduty"
   name_prefix     = "${local.project_name}-guardduty"
   enable_notifications = true
   notification_emails  = ["security@example.com"]
@@ -440,7 +436,7 @@ module "guardduty" {
 }
 
 module "inspector" {
-  source          = "./modules/inspector"
+  source          = "./inspector"
   name_prefix     = "${local.project_name}-inspector"
   resource_types  = ["EC2", "ECR", "LAMBDA"]
   enable_notifications = true

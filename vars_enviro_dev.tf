@@ -1,8 +1,17 @@
+# ============================================
+# DEVELOPMENT ENVIRONMENT CONFIGURATION
+# ============================================
+# This file contains all configuration for the development environment.
+# Update the values below to match your project requirements.
+#
+# IMPORTANT: S3 bucket names must be globally unique across all AWS accounts.
+# Update all bucket names and key pair names before deploying.
+
 locals {
   # Development Environment
   dev = {
     environment  = "dev"
-    project_name = "boiler-plate"
+    project_name = "my-project"  # Change this to your project name
     vpc = {
       cidr                       = "10.0.0.0/16"
       public_subnets             = ["10.0.1.0/24", "10.0.2.0/24"]
@@ -37,12 +46,12 @@ locals {
       frontend = {
         instance_type = "t3.medium"
         ami_id        = "ami-0ec10929233384c7f" # Amazon Linux 2 us-east-1
-        key_name      = "gabriel-boiler-plate-dev-key"
+        key_name      = "my-dev-key"  # Change to your key pair name
       }
       backend = {
         instance_type = "t3.medium"
         ami_id        = "ami-0ec10929233384c7f" # Amazon Linux 2 us-east-1
-        key_name      = "gabriel-boiler-plate-dev-key"
+        key_name      = "my-dev-key"  # Change to your key pair name
       }
     }
     # Dev environment uses EC2 instances, not ECS
@@ -74,7 +83,7 @@ locals {
       ]
     }
     domain_config = {
-      domain_name = "dev.boiler-plate.com"
+      domain_name = "dev.example.com"  # Change to your domain
     }
     monitoring_config = {
       enable_cloudwatch = true
@@ -82,25 +91,25 @@ locals {
     }
     tags = {
       Environment = "dev"
-      Project     = "boiler-plate"
+      Project     = "my-project"  # Change to your project name
       ManagedBy   = "terraform"
       Owner       = "DevTeam"
-      Company     = "gabriel-boiler-plate"
+      Company     = "my-company"  # Change to your company name
     }
     s3 = {
       buckets = {
         media = {
-          name            = "gabriel-boiler-plate-media-storage"
+          name            = "my-project-media-dev"  # Must be globally unique
           versioning      = false
           lifecycle_rules = []
         }
         static = {
-          name            = "gabriel-boiler-plate-static-assets"
+          name            = "my-project-static-dev"  # Must be globally unique
           versioning      = false
           lifecycle_rules = []
         }
         backups = {
-          name       = "gabriel-boiler-plate-backup-storage"
+          name       = "my-project-backups-dev"  # Must be globally unique
           versioning = true
           lifecycle_rules = [
             {
@@ -114,7 +123,7 @@ locals {
           ]
         }
         configs = {
-          name            = "gabriel-boiler-plate-configuration-storage"
+          name            = "my-project-configs-dev"  # Must be globally unique
           versioning      = true
           lifecycle_rules = []
         }
@@ -135,7 +144,7 @@ locals {
     monitoring = {
       instance_type = "t3.micro"
       ami_id        = "ami-0ec10929233384c7f" # Amazon Linux 2 us-east-1
-      key_name      = "katakara-dev-key"
+      key_name      = "my-dev-key"  # Change to your key pair name
       services = {
         prometheus = { port = 9090, path = "/prometheus" }
         grafana    = { port = 3000, path = "/grafana" }

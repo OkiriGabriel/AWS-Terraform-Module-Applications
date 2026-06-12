@@ -1,5 +1,5 @@
 module "vpc" {
-  source = "./modules/vpc"
+  source = "./vpc"
 
   environment = local.environment
   vpc_cidr    = local.current_env.vpc.cidr

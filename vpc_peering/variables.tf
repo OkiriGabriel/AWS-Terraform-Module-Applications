@@ -66,30 +66,6 @@ variable "accepter_allow_remote_vpc_dns_resolution" {
   default     = true
 }
 
-variable "requester_allow_classic_link_to_remote_vpc" {
-  description = "Allow a local linked EC2-Classic instance to communicate with instances in a peer VPC"
-  type        = bool
-  default     = false
-}
-
-variable "requester_allow_vpc_to_remote_classic_link" {
-  description = "Allow a local VPC to communicate with a linked EC2-Classic instance in a peer VPC"
-  type        = bool
-  default     = false
-}
-
-variable "accepter_allow_classic_link_to_remote_vpc" {
-  description = "Allow a local linked EC2-Classic instance to communicate with instances in a peer VPC"
-  type        = bool
-  default     = false
-}
-
-variable "accepter_allow_vpc_to_remote_classic_link" {
-  description = "Allow a local VPC to communicate with a linked EC2-Classic instance in a peer VPC"
-  type        = bool
-  default     = false
-}
-
 variable "create_security_group_rules" {
   description = "Create security group rules to allow traffic between peered VPCs"
   type        = bool

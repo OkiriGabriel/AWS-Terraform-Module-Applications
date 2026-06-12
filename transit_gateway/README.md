@@ -67,7 +67,7 @@ This module creates an AWS Transit Gateway with a hub-and-spoke network architec
 
 ```hcl
 module "transit_gateway" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name        = "main-tgw"
   description = "Main Transit Gateway for production"
@@ -114,7 +114,7 @@ module "transit_gateway" {
 
 ```hcl
 module "transit_gateway_segmented" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name = "segmented-tgw"
   
@@ -193,7 +193,7 @@ module "transit_gateway_segmented" {
 ```hcl
 # In the shared services account
 module "transit_gateway_shared" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name = "shared-tgw"
   
@@ -231,7 +231,7 @@ resource "aws_ec2_transit_gateway_vpc_attachment" "app_vpc" {
 ```hcl
 # In us-east-1
 module "tgw_us_east" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name = "tgw-us-east-1"
   
@@ -257,7 +257,7 @@ module "tgw_us_east" {
 
 # In us-west-2
 module "tgw_us_west" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
   
   providers = {
     aws = aws.us_west_2
@@ -289,7 +289,7 @@ module "tgw_us_west" {
 
 ```hcl
 module "transit_gateway_vpn" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name = "tgw-with-vpn"
   
@@ -313,7 +313,7 @@ module "transit_gateway_vpn" {
 
 # Attach VPN to Transit Gateway
 module "vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
   
   create_site_to_site_vpn     = true
   use_transit_gateway         = true

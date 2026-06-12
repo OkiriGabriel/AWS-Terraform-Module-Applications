@@ -284,7 +284,7 @@ Fixes #456
 2. Create a minimal test configuration:
    ```hcl
    module "test" {
-     source = "../modules/your-module"
+     source = "../your-module"
      
      # Minimal required variables
      name = "test"
