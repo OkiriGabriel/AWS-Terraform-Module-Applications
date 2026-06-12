@@ -1,7 +1,7 @@
 # S3 Buckets Configuration for boiler-plate
 # Media bucket for product images, vendor assets, user uploads
 module "s3_media" {
-  source = "./modules/s3"
+  source = "./s3"
 
   bucket_name = local.current_env.s3.buckets.media.name
   environment = local.environment
@@ -20,7 +20,7 @@ module "s3_media" {
 
 # Static assets bucket for CSS, JS, fonts, icons
 module "s3_static" {
-  source = "./modules/s3"
+  source = "./s3"
 
   bucket_name = local.current_env.s3.buckets.static.name
   environment = local.environment
@@ -39,7 +39,7 @@ module "s3_static" {
 
 # Backups bucket for database backups, code archives
 module "s3_backups" {
-  source = "./modules/s3"
+  source = "./s3"
 
   bucket_name = local.current_env.s3.buckets.backups.name
   environment = local.environment
@@ -58,7 +58,7 @@ module "s3_backups" {
 
 # Configuration bucket for environment configuration files
 module "s3_configs" {
-  source = "./modules/s3"
+  source = "./s3"
 
   bucket_name = local.current_env.s3.buckets.configs.name
   environment = local.environment

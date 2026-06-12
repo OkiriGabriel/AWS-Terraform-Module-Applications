@@ -1,12 +1,24 @@
+# ============================================
+# PRODUCTION ENVIRONMENT CONFIGURATION
+# ============================================
+# This file contains all configuration for the production environment.
+# Update the values below to match your project requirements.
+#
+# IMPORTANT: S3 bucket names must be globally unique across all AWS accounts.
+# Update all bucket names and key pair names before deploying.
+#
+# Production uses ECS/Fargate for container orchestration.
+# Development uses direct EC2 instances.
+
 locals {
   # Production Environment
   prod = {
     environment  = "prod"
-    project_name = "boiler-plate"
+    project_name = "my-project"  # Change this to your project name
     vpc = {
       cidr                       = "10.0.0.0/16"
-      public_subnets             = ["10.0.1.0/24", "10.0.2.0/24"]   # boiler-plate-public-a, boiler-plate-public-b
-      private_subnets            = ["10.0.10.0/24", "10.0.20.0/24"] # boiler-plate-app-private-a, boiler-plate-app-private-b
+      public_subnets             = ["10.0.1.0/24", "10.0.2.0/24"]
+      private_subnets            = ["10.0.10.0/24", "10.0.20.0/24"]
       azs                        = ["us-east-1a", "us-east-1b"]
       single_nat_gateway         = true
       enable_nat_gateway         = true
@@ -50,19 +62,19 @@ locals {
       desired_capacity = 1
       min_size         = 1
       max_size         = 2
-      key_name         = "boiler-plate-prod-key"
+      key_name         = "my-prod-key"  # Change to your key pair name
     }
     ecs = {
-      cluster_name = "boiler-plate-prod-cluster"
+      cluster_name = "my-project-prod-cluster"  # Change to your cluster name
       frontend = {
         task_cpu                  = 1024
         task_memory               = 2048
         min_capacity              = 1
         max_capacity              = 4
         container_port            = 80
-        container_image           = "nginx:latest"
+        container_image           = "nginx:latest"  # Change to your image
         desired_count             = 1
-        container_name            = "boiler-plate-frontend"
+        container_name            = "frontend"
         service_name              = "prod-frontend-service"
         enable_container_insights = true
         log_retention_days        = 30
@@ -73,11 +85,11 @@ locals {
         task_cpu                  = 1024
         task_memory               = 2048
         container_port            = 3000
-        container_image           = "node:18-alpine"
+        container_image           = "node:18-alpine"  # Change to your image
         desired_count             = 1
         min_capacity              = 1
         max_capacity              = 6
-        container_name            = "boiler-plate-backend"
+        container_name            = "backend"
         service_name              = "prod-backend-service"
         enable_container_insights = true
         log_retention_days        = 30
@@ -90,9 +102,9 @@ locals {
         min_capacity              = 1
         max_capacity              = 2
         container_port            = 80
-        container_image           = "nginx:latest"
+        container_image           = "nginx:latest"  # Change to your image
         desired_count             = 1
-        container_name            = "boiler-plate-admin"
+        container_name            = "admin"
         service_name              = "prod-admin-service"
         enable_container_insights = true
         log_retention_days        = 30
@@ -151,7 +163,7 @@ locals {
       ]
     }
     domain_config = {
-      domain_name = "boiler-plate.com"
+      domain_name = "example.com"  # Change to your domain
     }
     monitoring_config = {
       enable_cloudwatch = true
@@ -159,27 +171,27 @@ locals {
     }
     tags = {
       Environment = "prod"
-      Project     = "boiler-plate"
+      Project     = "my-project"  # Change to your project name
       ManagedBy   = "terraform"
       Owner       = "ProdTeam"
-      Company     = "gabriel-boiler-plate"
+      Company     = "my-company"  # Change to your company name
     }
 
-    # S3 Configuration for boiler-plate
+    # S3 Configuration
     s3 = {
       buckets = {
         media = {
-          name            = "boiler-plate-media"
+          name            = "my-project-media-prod"  # Must be globally unique
           versioning      = true
           lifecycle_rules = []
         }
         static = {
-          name            = "boiler-plate-static"
+          name            = "my-project-static-prod"  # Must be globally unique
           versioning      = false
           lifecycle_rules = []
         }
         backups = {
-          name       = "boiler-plate-backups"
+          name       = "my-project-backups-prod"  # Must be globally unique
           versioning = true
           lifecycle_rules = [
             {
@@ -193,7 +205,7 @@ locals {
           ]
         }
         configs = {
-          name            = "boiler-plate-configs"
+          name            = "my-project-configs-prod"  # Must be globally unique
           versioning      = true
           lifecycle_rules = []
         }
@@ -217,7 +229,7 @@ locals {
     monitoring = {
       instance_type = "t2.small"
       ami_id        = "ami-0d05471b100e9083f" # Amazon Linux 2 us-east-1
-      key_name      = "boiler-plate-prod-key"
+      key_name      = "my-prod-key"  # Change to your key pair name
       services = {
         prometheus = {
           port = 9090

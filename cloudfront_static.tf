@@ -1,7 +1,7 @@
 # # Static assets CDN — same child module for dev and prod (bucket comes from current workspace env).
 
 # module "cloudfront_static" {
-#   source = "./modules/cloudfront_static"
+#   source = "./cloudfront_static"
 
 #   environment  = local.environment
 #   project_name = local.project_name

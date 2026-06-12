@@ -20,7 +20,7 @@ This module enables and configures AWS GuardDuty for intelligent threat detectio
 
 ```hcl
 module "guardduty" {
-  source = "./modules/guardduty"
+  source = "./guardduty"
 
   name_prefix = "my-org"
   

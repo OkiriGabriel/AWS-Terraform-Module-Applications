@@ -113,7 +113,7 @@ Enable additional modules by configuring them:
 
 ```hcl
 module "eks" {
-  source = "./modules/eks"
+  source = "./eks"
 
   cluster_name = "my-cluster"
   vpc_id       = module.vpc.vpc_id
@@ -132,7 +132,7 @@ module "eks" {
 
 ```hcl
 module "guardduty" {
-  source = "./modules/guardduty"
+  source = "./guardduty"
 
   enable_notifications = true
   notification_emails  = ["security@example.com"]
@@ -143,7 +143,7 @@ module "guardduty" {
 
 ```hcl
 module "inspector" {
-  source = "./modules/inspector"
+  source = "./inspector"
 
   resource_types = ["EC2", "ECR", "LAMBDA"]
 }
@@ -153,7 +153,7 @@ module "inspector" {
 
 ```hcl
 module "vpc_peering" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id     = module.vpc_primary.vpc_id
   accepter_vpc_id      = module.vpc_secondary.vpc_id
@@ -166,7 +166,7 @@ module "vpc_peering" {
 
 ```hcl
 module "vpn" {
-  source = "./modules/vpn"
+  source = "./vpn"
 
   vpc_id                      = module.vpc.vpc_id
   create_site_to_site_vpn     = true
@@ -178,7 +178,7 @@ module "vpn" {
 
 ```hcl
 module "transit_gateway" {
-  source = "./modules/transit_gateway"
+  source = "./transit_gateway"
 
   name = "main-tgw"
   

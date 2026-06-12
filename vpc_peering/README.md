@@ -26,7 +26,7 @@ This module creates VPC peering connections between VPCs, enabling private conne
 
 ```hcl
 module "vpc_peering" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id    = "vpc-12345678"
   accepter_vpc_id     = "vpc-87654321"
@@ -49,7 +49,7 @@ module "vpc_peering" {
 
 ```hcl
 module "vpc_peering_cross_region" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id    = "vpc-us-east-1"
   accepter_vpc_id     = "vpc-eu-west-1"
@@ -74,7 +74,7 @@ module "vpc_peering_cross_region" {
 
 ```hcl
 module "vpc_peering_cross_account" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id    = "vpc-account-a"
   accepter_vpc_id     = "vpc-account-b"
@@ -98,7 +98,7 @@ module "vpc_peering_cross_account" {
 
 ```hcl
 module "vpc_peering_with_sg" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id    = module.vpc_app.vpc_id
   accepter_vpc_id     = module.vpc_db.vpc_id
@@ -120,7 +120,7 @@ module "vpc_peering_with_sg" {
 
 ```hcl
 module "vpc_peering_monitored" {
-  source = "./modules/vpc_peering"
+  source = "./vpc_peering"
 
   requester_vpc_id    = "vpc-12345678"
   accepter_vpc_id     = "vpc-87654321"
