@@ -256,8 +256,8 @@ resource "aws_guardduty_filter" "auto_archive_low_severity" {
 
   finding_criteria {
     criterion {
-      field  = "severity"
-      less_than = "4.0"
+      field      = "severity"
+      less_than  = "4"
     }
   }
 

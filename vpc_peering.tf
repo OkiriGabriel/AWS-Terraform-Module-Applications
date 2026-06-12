@@ -12,7 +12,7 @@ module "vpc_peering" {
   
   # Route table configuration
   requester_route_table_ids = module.vpc.private_route_table_ids
-  accepter_route_table_ids  = ["rtb-xxxxxxxxx"]  # Update with target route tables
+  accepter_route_table_ids  = ["rtb-xxxxxxxxx"]  # Update with target VPC route table IDs
   
   # Peering configuration
   auto_accept  = true  # Set to false for cross-account/cross-region

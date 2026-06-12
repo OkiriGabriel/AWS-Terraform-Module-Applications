@@ -20,7 +20,7 @@ output "accepter_vpc_id" {
 
 output "requester_owner_id" {
   description = "The AWS account ID of the owner of the requester VPC"
-  value       = aws_vpc_peering_connection.main.owner_id
+  value       = try(aws_vpc_peering_connection.main.tags["RequesterAccountId"], null)
 }
 
 output "accepter_owner_id" {
@@ -30,7 +30,7 @@ output "accepter_owner_id" {
 
 output "requester_region" {
   description = "The region of the requester VPC"
-  value       = aws_vpc_peering_connection.main.region
+  value       = try(aws_vpc_peering_connection.main.tags["RequesterRegion"], null)
 }
 
 output "accepter_region" {
@@ -40,7 +40,7 @@ output "accepter_region" {
 
 output "peering_connection_arn" {
   description = "The ARN of the VPC peering connection"
-  value       = aws_vpc_peering_connection.main.arn
+  value       = try("arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:vpc-peering-connection/${aws_vpc_peering_connection.main.id}", null)
 }
 
 output "requester_routes" {
