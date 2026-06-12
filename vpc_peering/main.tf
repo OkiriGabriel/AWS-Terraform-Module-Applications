@@ -146,3 +146,5 @@ resource "aws_vpc_peering_connection_options" "accepter" {
 }
 
 data "aws_caller_identity" "current" {}
+
+data "aws_region" "current" {}

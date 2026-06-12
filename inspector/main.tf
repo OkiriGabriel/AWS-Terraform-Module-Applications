@@ -197,12 +197,16 @@ resource "aws_s3_bucket_public_access_block" "inspector_reports" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "inspector_reports" {
-  count  = var.enable_report_export ? 1 : 0
+  count  = var.enable_report_export && var.report_retention_days > 0 ? 1 : 0
   bucket = aws_s3_bucket.inspector_reports[0].id
 
   rule {
     id     = "delete-old-reports"
-    status = var.report_retention_days > 0 ? "Enabled" : "Disabled"
+    status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
 
     expiration {
       days = var.report_retention_days

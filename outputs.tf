@@ -110,15 +110,16 @@ output "s3_buckets" {
 }
 
 # CloudFront (static assets) — same module wiring for dev and prod workspaces
-output "cloudfront_static" {
-  description = "CloudFront CDN for the static-assets S3 bucket"
-  value = {
-    domain_name      = module.cloudfront_static.domain_name
-    distribution_id  = module.cloudfront_static.distribution_id
-    distribution_arn = module.cloudfront_static.distribution_arn
-    url              = "https://${module.cloudfront_static.domain_name}"
-  }
-}
+# CloudFront static is optional - uncomment when cloudfront_static module is enabled
+# output "cloudfront_static" {
+#   description = "CloudFront CDN for the static-assets S3 bucket"
+#   value = {
+#     domain_name      = module.cloudfront_static.domain_name
+#     distribution_id  = module.cloudfront_static.distribution_id
+#     distribution_arn = module.cloudfront_static.distribution_arn
+#     url              = "https://${module.cloudfront_static.domain_name}"
+#   }
+# }
 
 # Security Information
 output "security_groups" {

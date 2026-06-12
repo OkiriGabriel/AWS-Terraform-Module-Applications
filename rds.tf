@@ -12,8 +12,8 @@ module "rds" {
   max_allocated_storage   = local.current_env.rds.max_allocated_storage
   db_name                 = local.current_env.rds.db_name
   security_group_id       = module.security_groups.ecs_tasks_security_group_id
-  db_username             = module.db_secrets[0].username
-  db_password             = module.db_secrets[0].password
+  db_username             = "admin"  # Change to your preferred username
+  db_password             = random_password.rds_password[0].result
   db_parameters           = local.current_env.rds.db_parameters
   backup_retention_period = local.current_env.rds.backup_retention_period
   backup_window           = local.current_env.rds.backup_window

@@ -33,6 +33,7 @@ module "transit_gateway" {
   }
   
   # Routes in VPC route tables pointing to Transit Gateway
+  # Add routes to VPC route tables
   vpc_route_table_routes = {
     main_to_tgw = {
       route_table_id         = module.vpc.private_route_table_ids[0]
