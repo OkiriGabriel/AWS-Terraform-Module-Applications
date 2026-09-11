@@ -7,38 +7,6 @@ output "alb_dns_name" {
   value       = terraform.workspace == "infrastructure-prod" ? aws_lb.main[0].dns_name : "N/A - Dev uses EC2"
 }
 
-# Development EC2 Information
-output "dev_servers" {
-  description = "Development EC2 server information"
-  value = terraform.workspace == "infrastructure" ? {
-    frontend = {
-      instance_id = aws_instance.frontend_dev[0].id
-      public_ip   = aws_instance.frontend_dev[0].public_ip
-      private_ip  = aws_instance.frontend_dev[0].private_ip
-      dns_name    = aws_instance.frontend_dev[0].public_dns
-    }
-    backend = {
-      instance_id = aws_instance.backend_dev[0].id
-      public_ip   = aws_instance.backend_dev[0].public_ip
-      private_ip  = aws_instance.backend_dev[0].private_ip
-      dns_name    = aws_instance.backend_dev[0].public_dns
-    }
-    } : {
-    frontend = {
-      instance_id = "N/A - Production uses ECS"
-      public_ip   = "N/A - Production uses ECS"
-      private_ip  = "N/A - Production uses ECS"
-      dns_name    = "N/A - Production uses ECS"
-    }
-    backend = {
-      instance_id = "N/A - Production uses ECS"
-      public_ip   = "N/A - Production uses ECS"
-      private_ip  = "N/A - Production uses ECS"
-      dns_name    = "N/A - Production uses ECS"
-    }
-  }
-}
-
 output "alb_hosted_zone_id" {
   description = "Hosted zone ID for the ALB (for Route53 aliases)"
   value       = terraform.workspace == "infrastructure-prod" ? aws_lb.main[0].zone_id : "N/A - Dev uses EC2"
