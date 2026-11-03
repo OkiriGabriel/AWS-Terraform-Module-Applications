@@ -1,0 +1,6 @@
+# Reviewed false positives. Each value is a Terraform variable reference (var.tunnel1_psk / var.tunnel2_psk),
+# not a secret. Format: <commit>:<file>:<rule>:<line>, taken from the Gitleaks report.
+6f13feb0c2e6738f66db5a512d982496373690b5:vpn.tf:generic-api-key:32
+6f13feb0c2e6738f66db5a512d982496373690b5:vpn.tf:generic-api-key:33
+b7fa40b98a3de71295813b0b881a85a90b768de6:modules/vpn/README.md:generic-api-key:55
+b7fa40b98a3de71295813b0b881a85a90b768de6:modules/vpn/README.md:generic-api-key:56
