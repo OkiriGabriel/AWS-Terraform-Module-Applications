@@ -7,7 +7,7 @@ behaves when something fails. For usage, see the [README](README.md); for proced
 ## 1. Layers
 
 | Layer | Applied from | Scope | Code |
-|-------|--------------|-------|------|
+|:------|:-------------|:------|:-----|
 | Organization guardrails | Management account, once | SCPs, OUs, delegated security admin | [modules/organization](modules/organization) |
 | Account baseline | Each workload account (`account_baseline = true` in one stack per account) | GuardDuty, Inspector, Security Hub, Config, CloudTrail, CIS alarms, Access Analyzer, EBS default encryption | [security.tf](security.tf) |
 | Platform | Each environment | Network, edge, compute, data, connectivity, alarms, backups | the root module |
@@ -48,7 +48,7 @@ Without a domain (`starter` only) the ALB serves the services directly over HTTP
 ## 3. Network
 
 | Item | Value |
-|------|-------|
+|:-----|:------|
 | VPC | `network.cidr` (default `10.0.0.0/16`) |
 | Subnets | Carved with `cidrsubnet(cidr, subnet_newbits, i)`. Default newbits 4 gives /20s (4,091 usable IPs each). Public subnets use indexes `0..n-1`, private `8..8+n-1`, leaving room to add tiers later |
 | AZs | 2 (`starter`, `production`) or 3 (`regulated`); override with `network.az_count` |
@@ -75,7 +75,7 @@ Without a domain (`starter` only) the ALB serves the services directly over HTTP
 ## 4. Identity and secrets
 
 | Principal | Can do | How it is limited |
-|-----------|--------|-------------------|
+|:----------|:-------|:------------------|
 | Task execution role (per service) | Pull image, write logs, read the secrets that service references | Secret ARNs computed from the service's own `secrets` map |
 | Task role (per service) | Read/write app buckets, ECS Exec channel, EFS mount | Bucket ARNs, EFS access-point condition |
 | GitHub deploy role | Push to this stack's ECR repos, register task definitions, update this stack's services, pass `<prefix>-*` roles to ECS | OIDC trust limited to `repo:<owner>/<repo>:ref:refs/heads/main` by default |
@@ -93,7 +93,7 @@ Credentials:
 ## 5. Availability and recovery
 
 | Component | `starter` | `production` / `regulated` | Typical behaviour on failure (verify with drills) |
-|-----------|-----------|----------------------------|---------------------------------------------------|
+|:----------|:----------|:---------------------------|:--------------------------------------------------|
 | NAT | 1 shared | 1 per AZ | Shared NAT: losing its AZ stops all private egress. Per-AZ: only that AZ is affected |
 | ECS services | Fargate Spot, `desired_count` | Fargate on-demand, autoscaling | Tasks spread across AZs; unhealthy tasks replaced; a failed deploy rolls back via the circuit breaker |
 | RDS | Single-AZ | Multi-AZ standby | Multi-AZ failover typically takes 1-2 minutes, with the same endpoint. Single-AZ means restoring from backup |
@@ -108,7 +108,7 @@ replicate data (cross-region RDS read replica / snapshot copy, S3 replication).
 ## 6. Observability
 
 | Signal | Where |
-|--------|-------|
+|:-------|:------|
 | Metrics dashboard | CloudWatch dashboard named `<name>-<env>`, built from what is deployed (ALB, services, RDS, Redis, alarm status) |
 | Alarms | No healthy targets per service, ALB and target 5xx, RDS CPU/storage, Redis CPU/memory, VPN/TGW (module defaults), 15 CIS alarms. All go to the `<name>-<env>-alerts` SNS topic, with OK notifications too |
 | Logs | `/ecs/<name>-<env>/<service>`, VPC flow logs, WAF (`aws-waf-logs-<name>-<env>`), CloudTrail, RDS engine logs, Client VPN connections |
@@ -117,7 +117,7 @@ replicate data (cross-region RDS read replica / snapshot copy, S3 replication).
 ## 7. Design decisions
 
 | Decision | Why |
-|----------|-----|
+|:---------|:----|
 | One module with profiles, not many small modules | Most teams need the same 80% wired the same secure way. `overrides` covers the rest without forking |
 | Guardrails as plan-time preconditions | Mistakes are cheapest to fix before anything exists; each message says what to change |
 | Fargate, not EC2 capacity | No hosts to patch or SSH into; ECS Exec replaces shell access |

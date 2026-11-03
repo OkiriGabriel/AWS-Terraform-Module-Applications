@@ -53,7 +53,7 @@ an estimated monthly cost per component, and your next steps.
 ## Why this module
 
 | Typical module | This module |
-|----------------|-------------|
+|:---------------|:------------|
 | 80+ variables to read before the first apply | 3 inputs; everything else has a secure default |
 | You wire DB hosts, secrets and IAM into your apps | Services receive `DB_*`, `REDIS_*`, `BUCKET_*` and least-privilege access automatically |
 | Insecure combinations fail at runtime, or never | The plan **refuses** them, with a message telling you what to change |
@@ -79,7 +79,7 @@ The starter example runs a public nginx service on Fargate Spot with no domain r
 Ready-to-copy examples:
 
 | Example | What it shows |
-|---------|---------------|
+|:--------|:--------------|
 | [examples/starter](examples/starter/main.tf) | Cheapest working stack: one web service, HTTP, single NAT |
 | [examples/production](examples/production/main.tf) | Web + API, Postgres, Redis, uploads bucket, HTTPS cert + DNS issued automatically, GitHub deploys |
 | [examples/regulated](examples/regulated/main.tf) | Everything on: EKS, EFS, site-to-site VPN, Client VPN with SSO, Transit Gateway, CMK everywhere |
@@ -128,7 +128,7 @@ Run one module instance per environment (for example a `dev` and a `prod` root, 
 A profile is a bundle of defaults. Every value below can be changed with [`overrides`](#overrides).
 
 | Setting | `starter` | `production` | `regulated` |
-|---------|-----------|--------------|-------------|
+|:--------|:----------|:-------------|:------------|
 | Availability zones | 2 | 2 | 3 |
 | NAT gateways | 1 shared | 1 per AZ | 1 per AZ |
 | Private AWS endpoints (ECR, logs, SSM, ...) | - | - | yes |
@@ -155,7 +155,7 @@ A profile is a bundle of defaults. Every value below can be changed with [`overr
 List any of these in `stack`:
 
 | Component | Creates | Extra input |
-|-----------|---------|-------------|
+|:----------|:--------|:------------|
 | `ecs` | Fargate cluster, ALB with per-service routing, ECR repo + logs + autoscaling per service, WAF (profile) | `services`, `domain` |
 | `eks` | EKS cluster (encrypted secrets, IRSA, control-plane logs), managed node group on AL2023 | `eks` (optional) |
 | `rds` | Postgres or MySQL, encrypted, TLS enforced, password managed and rotated by RDS | `database` (optional) |
@@ -193,7 +193,7 @@ a deployment circuit breaker with automatic rollback, and its own task and execu
 **Auto-wired environment.** Based on what is in `stack`, every service receives:
 
 | Variable | Source |
-|----------|--------|
+|:---------|:-------|
 | `DB_ENGINE`, `DB_HOST`, `DB_PORT`, `DB_NAME` | `rds` |
 | `DB_USERNAME`, `DB_PASSWORD` | injected as secrets from the RDS-managed Secrets Manager secret |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_TLS=true` | `redis` |
@@ -235,7 +235,7 @@ The `settings` output lists every key and its resolved value.
 The plan stops with a clear message when a configuration is insecure or incomplete:
 
 | Refused | Message tells you to |
-|---------|----------------------|
+|:--------|:---------------------|
 | `production`/`regulated` with `ecs` but no domain | add `domain` (or use `starter`) |
 | `ecs` with no services | define at least one service |
 | More than one catch-all service | give the others paths or host headers |
@@ -270,7 +270,7 @@ module "organization" {
 ```
 
 | Pack | Effect |
-|------|--------|
+|:-----|:-------|
 | `baseline` | `deny-leave-org` + `deny-root-user` + `protect-security-services` |
 | `deny-leave-org` | Accounts cannot leave the organization |
 | `deny-root-user` | Member-account root users can do nothing |
@@ -292,7 +292,7 @@ time against the 5,120-character limit, and the plan also checks that SCPs are e
 ## Outputs
 
 | Output | Contents |
-|--------|----------|
+|:-------|:---------|
 | `summary` | URL, dashboard link, services, network, security controls, estimated monthly cost per component, next steps |
 | `settings` | Every resolved profile setting |
 | `vpc` | VPC ID, CIDR, subnet IDs, route tables, NAT public IPs |
@@ -316,7 +316,7 @@ The cost estimate uses us-east-1 on-demand list prices and excludes data transfe
 ## Inputs reference
 
 | Input | Default | Description |
-|-------|---------|-------------|
+|:------|:--------|:------------|
 | `name` | (required) | Project prefix, 2-12 lowercase chars |
 | `environment` | `"prod"` | Environment label, 2-8 chars |
 | `profile` | `"production"` | `starter`, `production` or `regulated` |
@@ -344,7 +344,7 @@ The cost estimate uses us-east-1 on-demand list prices and excludes data transfe
 ## Security
 
 | Area | Controls |
-|------|----------|
+|:-----|:---------|
 | Audit | Multi-region CloudTrail with log file validation, KMS-encrypted, TLS-only bucket, CloudWatch Logs; 15 CIS Benchmark alarms (root use, console login without MFA, IAM/SG/NACL/route/VPC/Organizations changes, ...) |
 | Detection | GuardDuty (S3, EBS malware, RDS logins, ECS/EKS runtime), Inspector, Security Hub (AWS FSBP + CIS v3.0), AWS Config, IAM Access Analyzer |
 | Network | Private subnets for all workloads and data; data stores reachable only from the tasks/EKS/VPN security groups; flow logs; locked default security group; no SSH anywhere |
@@ -393,7 +393,7 @@ terraform test                                    # SCP guardrail packs
 every pull request, and on demand:
 
 | Job | Checks |
-|-----|--------|
+|:----|:-------|
 | Format and Lint | `terraform fmt`, TFLint (Terraform recommended + AWS ruleset), module file layout |
 | Init and Validate | `init` + `validate` for the root module, the organization module and every example |
 | Tests (mocked AWS) | Both `terraform test` suites |

@@ -12,7 +12,7 @@ Legend: **yes** = provided by the module · **-** = not provided · **you** = a 
 ## 1. Single points of failure by profile
 
 | Component | `starter` | `production` | `regulated` | Remove it in `starter` with |
-|-----------|-----------|--------------|-------------|-----------------------------|
+|:----------|:----------|:-------------|:------------|:----------------------------|
 | NAT gateway | 1 shared (SPOF for egress) | 1 per AZ | 1 per AZ | `overrides.nat_mode = "per_az"` (+~$33/month per AZ) |
 | Database | Single-AZ | Multi-AZ | Multi-AZ | `overrides.rds_multi_az = true` |
 | Redis | 1 node | 2 nodes, auto-failover | 2 nodes, auto-failover | `overrides.redis_nodes = 2` |
@@ -28,7 +28,7 @@ real customer traffic.
 ## 2. Backups and restore
 
 | Requirement | starter | production | regulated | Your action |
-|-------------|---------|------------|-----------|-------------|
+|:------------|:--------|:-----------|:----------|:------------|
 | RDS automated backups (PITR) | 1 day | 7 days | 35 days | - |
 | RDS final snapshot on destroy | - | yes | yes | - |
 | RDS / ALB deletion protection | - | yes | yes | - |
@@ -47,7 +47,7 @@ real customer traffic.
 ## 3. Deployments
 
 | Requirement | starter | production | regulated | Your action |
-|-------------|---------|------------|-----------|-------------|
+|:------------|:--------|:-----------|:----------|:------------|
 | Automatic rollback on failed deploy (circuit breaker) | yes | yes | yes | - |
 | Health checks per service | yes | yes | yes | Make `health_check_path` check real dependencies |
 | CPU + memory autoscaling | yes | yes | yes | Set `min_count` >= 2 for critical services |
@@ -62,7 +62,7 @@ real customer traffic.
 ## 4. Alerting
 
 | Requirement | starter | production | regulated | Your action |
-|-------------|---------|------------|-----------|-------------|
+|:------------|:--------|:-----------|:----------|:------------|
 | Alarms: no healthy targets, ALB/target 5xx | yes | yes | yes | - |
 | Alarms: RDS CPU + storage, Redis CPU + memory | yes, when in stack | yes | yes | - |
 | CIS Benchmark alarms (15) | - | yes | yes | - |
@@ -79,7 +79,7 @@ real customer traffic.
 ## 5. Security
 
 | Requirement | starter | production | regulated | Your action |
-|-------------|---------|------------|-----------|-------------|
+|:------------|:--------|:-----------|:----------|:------------|
 | HTTPS with TLS 1.3/1.2 | with `domain` | required | required | - |
 | WAF | - | yes | yes | Tune rules against real traffic |
 | CloudTrail (multi-region, validated) | yes | yes | yes, 7-year retention | - |
@@ -97,7 +97,7 @@ real customer traffic.
 None of these can be automated; all are **you**, for every profile.
 
 | Requirement | Minimum |
-|-------------|---------|
+|:------------|:--------|
 | On-call owner | Named primary and secondary, with hours of coverage |
 | Escalation path | Who to call when on-call cannot resolve it |
 | Incident channel | A dedicated chat channel or bridge |
@@ -110,7 +110,7 @@ None of these can be automated; all are **you**, for every profile.
 ## 7. Suggested upgrade path
 
 | Stage | Change | Approx. added cost / month |
-|-------|--------|----------------------------|
+|:------|:-------|:---------------------------|
 | Prototype | `starter` | baseline (about $60 for one small service) |
 | First real users | `overrides = { ecs_capacity = "FARGATE", redis_nodes = 2 }`, `min_count = 2` | low |
 | Paying customers | `profile = "production"` (Multi-AZ DB, NAT per AZ, WAF, backups, Security Hub) | see `summary.estimated_monthly_usd` |
