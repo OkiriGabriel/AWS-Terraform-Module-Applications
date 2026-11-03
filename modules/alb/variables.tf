@@ -34,37 +34,9 @@ variable "target_port" {
   type        = number
 }
 
-variable "listener_port" {
-  description = "Listener port for the ALB"
-  type        = number
-  default     = 80
-}
-
 variable "health_check_path" {
   description = "Health check path"
   type        = string
-}
-
-variable "ecs_cluster_name" {
-  description = "Name of the ECS cluster"
-  type        = string
-  default     = null
-}
-
-variable "ecs_service_name" {
-  description = "Name of the ECS service"
-  type        = string
-  default     = null
-}
-
-variable "max_capacity" {
-  description = "Maximum capacity for auto scaling"
-  type        = number
-}
-
-variable "min_capacity" {
-  description = "Minimum capacity for auto scaling"
-  type        = number
 }
 
 variable "certificate_arn" {
