@@ -1,16 +1,11 @@
-name: Terraform Validation
+name: Terraform CI
 
+# Runs on every push to any branch, on every pull request, and on demand.
 on:
-  pull_request:
-    branches:
-      - main
-      - development
-      - staging
   push:
-    branches:
-      - main
-      - development
-      - staging
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,130 +14,174 @@ concurrency:
   group: terraform-ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TF_VERSION: 1.15.8 # version the test suite is verified on (mocked tests need >= 1.7)
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-plugin-cache
+
 jobs:
-  validate:
-    name: Terraform Validation
+  # ------------------------------------------------------------------ format + lint
+  lint:
+    name: Format and Lint
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write # comment results on PRs
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.15.8 # version the test suite is verified on (mocks need >= 1.7)
+          terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Terraform Format Check
-        id: fmt
+      - name: terraform fmt
         run: terraform fmt -check -recursive -diff
 
-      - name: Terraform Init (module)
-        id: init
-        run: terraform init -backend=false -input=false
+      - uses: terraform-linters/setup-tflint@v4
 
-      - name: Terraform Validate (module)
-        id: validate
-        run: terraform validate -no-color
+      - name: Cache TFLint plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('.tflint.hcl') }}
 
-      # Runs every profile end-to-end and checks each guardrail against a mocked AWS provider.
-      # No AWS credentials needed, nothing is created.
-      - name: Terraform Test (module)
-        id: test
-        run: terraform test -no-color
+      - name: tflint
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # avoids GitHub API rate limits when downloading plugins
+        run: |
+          tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+          tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl" --format compact --minimum-failure-severity=error
 
-      - name: Terraform Test (organization guardrails)
+      - name: Module structure
+        run: |
+          for module_dir in modules/*/; do
+            for f in main.tf variables.tf outputs.tf; do
+              [ -f "$module_dir$f" ] || { echo "::error::Missing $f in $module_dir"; exit 1; }
+            done
+            echo "ok $module_dir"
+          done
+
+  # ------------------------------------------------------------------ init + validate
+  validate:
+    name: Init and Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Cache providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: tf-providers-${{ runner.os }}-${{ hashFiles('**/versions.tf', 'examples/**/main.tf') }}
+
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+
+      - name: Validate root module
+        run: |
+          terraform init -backend=false
+          terraform validate -no-color
+
+      - name: Validate organization module
         working-directory: modules/organization
         run: |
-          terraform init -backend=false -input=false
-          terraform test -no-color
+          terraform init -backend=false
+          terraform validate -no-color
 
       - name: Validate examples
         run: |
           for e in examples/*/; do
             echo "::group::$e"
-            (cd "$e" && terraform init -backend=false -input=false >/dev/null && terraform validate -no-color)
+            (cd "$e" && terraform init -backend=false >/dev/null && terraform validate -no-color)
             echo "::endgroup::"
           done
 
-      - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v4
+  # ------------------------------------------------------------------ tests
+  test:
+    name: Tests (mocked AWS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: TFLint
-        run: |
-          tflint --init
-          tflint --recursive --format compact --minimum-failure-severity=error
-
-      - name: Validate Module Structure
-        run: |
-          for module_dir in modules/*/; do
-            for f in main.tf variables.tf outputs.tf; do
-              if [ ! -f "$module_dir$f" ]; then
-                echo "❌ Missing $f in $module_dir"; exit 1
-              fi
-            done
-            echo "✅ $module_dir"
-          done
-
-      - name: Comment PR
-        if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
+      - uses: hashicorp/setup-terraform@v3
         with:
-          script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            #### Terraform Test 🧪\`${{ steps.test.outcome }}\`
+          terraform_version: ${{ env.TF_VERSION }}
 
-            *Pusher: ${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+      - name: Cache providers
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: tf-providers-${{ runner.os }}-${{ hashFiles('**/versions.tf', 'examples/**/main.tf') }}
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
+      # Every profile end-to-end plus each guardrail, against a mocked provider:
+      # no AWS credentials, nothing is created, no cost.
+      - name: Platform module tests
+        run: |
+          terraform init -backend=false
+          terraform test -no-color
+
+      - name: Organization guardrail tests
+        working-directory: modules/organization
+        run: |
+          terraform init -backend=false
+          terraform test -no-color
+
+  # ------------------------------------------------------------------ secrets
   secrets:
     name: Secret Scanning
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # scan full history, not just the tip
+          fetch-depth: 0 # scan full history, not just the latest commit
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # ------------------------------------------------------------------ IaC security
   security:
     name: IaC Security Scanning
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write # upload SARIF to GitHub code scanning
-
+      security-events: write # upload SARIF to the repository's Security > Code scanning tab
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Run Checkov
+      - name: Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: .
           framework: terraform
-          soft_fail: true # report findings in the Security tab without blocking merges
+          skip_path: tests,examples
+          soft_fail: true # findings go to the Security tab; flip to false to block merges on findings
           output_format: cli,sarif
           output_file_path: console,results.sarif
 
-      - name: Upload Checkov SARIF
+      - name: Upload Checkov results
         if: always() && hashFiles('results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
           category: checkov
+
+  # ------------------------------------------------------------------ single required check
+  ci-passed:
+    name: CI passed
+    if: always()
+    needs: [lint, validate, test, secrets, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "lint=${{ needs.lint.result }} validate=${{ needs.validate.result }} test=${{ needs.test.result }} secrets=${{ needs.secrets.result }} security=${{ needs.security.result }}"
+          exit 1
+
+      - name: All checks green
+        run: echo "All CI jobs passed."
