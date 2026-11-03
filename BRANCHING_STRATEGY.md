@@ -408,14 +408,14 @@ root configuration (in your infrastructure repo) that calls the module with its 
 
 ```
 live/
-├── dev/main.tf       # module "platform" { profile = "starter",    environment = "dev",     source = "...?ref=v1.2.0" }
-├── staging/main.tf   # module "platform" { profile = "production", environment = "staging", source = "...?ref=v1.2.0" }
-└── prod/main.tf      # module "platform" { profile = "production", environment = "prod",    source = "...?ref=v1.1.0" }
+├── dev/main.tf       # module "platform" { profile = "starter",    environment = "dev",     version = "1.2.0" }
+├── staging/main.tf   # module "platform" { profile = "production", environment = "staging", version = "1.2.0" }
+└── prod/main.tf      # module "platform" { profile = "production", environment = "prod",    version = "1.1.0" }
 ```
 
 - Each root has its own backend key (for example `acme/dev.tfstate`), ideally in its own AWS account.
-- Promote a module change by bumping `?ref=` in dev first, then staging, then prod.
-- Release by tagging `main` (`vMAJOR.MINOR.PATCH`); never point an environment at a branch.
+- Promote a module change by bumping `version` in dev first, then staging, then prod.
+- Release by tagging `main` (`vMAJOR.MINOR.PATCH`); the Terraform Registry publishes each tag automatically. Never point an environment at a branch.
 
 ## CI/CD Integration
 

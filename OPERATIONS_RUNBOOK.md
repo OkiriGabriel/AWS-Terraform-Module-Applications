@@ -199,4 +199,4 @@ Fill these in for your team and keep them current:
 - Run changes through pull requests; CI must be green. Apply from CI or a single trusted machine.
 - Never edit module-managed resources in the console. If you must during an incident, record the change and
   reconcile it in code afterwards (`terraform plan` shows the drift).
-- Pin the module with `?ref=vX.Y.Z` and upgrade one environment at a time, non-production first.
+- Pin the module (`version = "X.Y.Z"` from the Registry, or `?ref=vX.Y.Z` for git sources) and upgrade one environment at a time, non-production first.

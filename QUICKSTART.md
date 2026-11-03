@@ -26,7 +26,8 @@ provider "aws" {
 }
 
 module "platform" {
-  source = "git::https://github.com/OkiriGabriel/AWS-Terraform-Module-Applications.git?ref=v1.0.0"
+  source  = "OkiriGabriel/platform/aws"
+  version = "~> 1.0"
 
   name        = "demo"
   environment = "dev"
