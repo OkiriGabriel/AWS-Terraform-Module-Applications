@@ -1,372 +1,108 @@
-# Quick Start Guide
+# Quick Start
 
-Get up and running with Gabriel AWS Infrastructure Boilerplate in minutes!
+Deploy a working stack in about 10 minutes, then grow it one setting at a time.
+The full reference is in the [README](README.md).
 
-## Prerequisites
+## 1. Prerequisites
 
-- AWS Account with appropriate permissions
-- Terraform >= 1.0.0 installed
-- AWS CLI configured with credentials
-- Git installed
+- Terraform >= 1.5 (`terraform version`)
+- AWS credentials for the target account (`aws sts get-caller-identity` works)
+- Permission to create VPC, ECS, IAM, ELB, CloudWatch and S3 resources
 
-## 5-Minute Setup
+## 2. Create a root configuration
 
-### 1. Clone the Repository
+In a new folder (or your infrastructure repo), create `main.tf`:
 
-```bash
-git clone https://github.com/yourusername/gabriel-aws-infrastructure.git
-cd gabriel-aws-infrastructure
+```hcl
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = { source = "hashicorp/aws", version = ">= 5.70.0, < 6.0.0" }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+module "platform" {
+  source = "git::https://github.com/OkiriGabriel/AWS-Terraform-Module-Applications.git?ref=v1.0.0"
+
+  name        = "demo"
+  environment = "dev"
+  profile     = "starter"
+  stack       = ["ecs"]
+}
+
+output "summary" {
+  value = module.platform.summary
+}
 ```
 
-### 2. Configure Backend
+Or run the ready-made example from this repo: `cd examples/starter`.
 
-Edit `provider.tf` to use your Terraform backend:
+## 3. Deploy
+
+```bash
+terraform init
+terraform plan     # read the plan; guardrails explain anything they refuse
+terraform apply
+```
+
+When it finishes, `summary.url` serves nginx from Fargate. `summary.estimated_monthly_usd` shows what it costs
+(about $60/month for this starter stack, most of it the NAT gateway and load balancer).
+
+## 4. Grow it
+
+Each step is one change and another `terraform apply`:
+
+| Want | Change |
+|------|--------|
+| Your own app | Push an image to `ecr_repositories["web"]`, remove `image` from the service (or set your image URI) |
+| A database | `stack = ["ecs", "rds"]`; services receive `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD` automatically |
+| A cache | add `"redis"`; services receive `REDIS_HOST` and `REDIS_AUTH_TOKEN` |
+| HTTPS on your domain | `domain = { name = "app.example.com", zone_id = "Z..." }` |
+| Production defaults | `profile = "production"` (requires `domain`) |
+| Alerts by email | `alert_email = "you@example.com"`, then confirm the email AWS sends |
+| VPN to your office | add `"vpn"` and `vpn = { customer_gateway_ip = "<office public IP>" }` |
+| Keyless CI deploys | `github_repository = "owner/repo"`, then follow [Deploying applications](README.md#deploying-applications-cicd) |
+
+## 5. Remote state (do this before sharing with a team)
+
+Keep state in S3 with locking. Create the bucket once (versioned, encrypted, public access blocked), then add:
 
 ```hcl
 terraform {
   backend "s3" {
-    bucket = "your-terraform-state-bucket"
-    key    = "infrastructure/terraform.tfstate"
-    region = "us-east-1"
+    bucket       = "my-org-terraform-state"
+    key          = "demo/dev.tfstate"
+    region       = "us-east-1"
+    use_lockfile = true
+    encrypt      = true
   }
 }
 ```
 
-Or remove the cloud/backend block to use local state (not recommended for production).
+and run `terraform init -migrate-state`. Use one root folder and one state key per environment.
 
-### 3. Customize Variables
-
-Edit `vars_enviro_dev.tf` for development or `vars_enviro_prod.tf` for production:
-
-```hcl
-locals {
-  dev = {
-    environment  = "dev"
-    project_name = "my-project"  # Change this
-    
-    vpc = {
-      cidr            = "10.0.0.0/16"
-      public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
-      private_subnets = ["10.0.10.0/24", "10.0.20.0/24"]
-      azs             = ["us-east-1a", "us-east-1b"]
-    }
-    
-    # Update S3 bucket names to be globally unique
-    s3 = {
-      buckets = {
-        media = {
-          name = "your-unique-media-bucket-name"  # Change this
-          # ...
-        }
-      }
-    }
-  }
-}
-```
-
-### 4. Initialize Terraform
-
-```bash
-terraform init
-```
-
-### 5. Create a Workspace (Optional)
-
-```bash
-terraform workspace new dev
-terraform workspace select dev
-```
-
-### 6. Review the Plan
-
-```bash
-terraform plan
-```
-
-### 7. Deploy Infrastructure
-
-```bash
-terraform apply
-```
-
-Type `yes` when prompted to confirm.
-
-## What Gets Created?
-
-### Core Infrastructure (Default)
-
-- **VPC**: Multi-AZ VPC with public and private subnets
-- **Security Groups**: Layered security with least privilege
-- **RDS**: MySQL database with automated backups
-- **ElastiCache**: Redis cluster for caching
-- **S3 Buckets**: For media, static assets, backups, configs
-- **ALB**: Application Load Balancer with SSL/TLS
-- **ECS**: Container orchestration (if configured)
-- **CloudWatch**: Monitoring and logging
-- **Secrets Manager**: Secure credential storage
-
-### Optional Modules
-
-Enable additional modules by configuring them:
-
-#### EKS Cluster
-
-```hcl
-module "eks" {
-  source = "./eks"
-
-  cluster_name = "my-cluster"
-  vpc_id       = module.vpc.vpc_id
-  subnet_ids   = module.vpc.private_subnet_ids
-  
-  node_groups = {
-    general = {
-      desired_size   = 2
-      instance_types = ["t3.medium"]
-    }
-  }
-}
-```
-
-#### GuardDuty
-
-```hcl
-module "guardduty" {
-  source = "./guardduty"
-
-  enable_notifications = true
-  notification_emails  = ["security@example.com"]
-}
-```
-
-#### Inspector
-
-```hcl
-module "inspector" {
-  source = "./inspector"
-
-  resource_types = ["EC2", "ECR", "LAMBDA"]
-}
-```
-
-#### VPC Peering
-
-```hcl
-module "vpc_peering" {
-  source = "./vpc_peering"
-
-  requester_vpc_id     = module.vpc_primary.vpc_id
-  accepter_vpc_id      = module.vpc_secondary.vpc_id
-  requester_cidr_block = "10.0.0.0/16"
-  accepter_cidr_block  = "10.1.0.0/16"
-}
-```
-
-#### VPN
-
-```hcl
-module "vpn" {
-  source = "./vpn"
-
-  vpc_id                      = module.vpc.vpc_id
-  create_site_to_site_vpn     = true
-  customer_gateway_ip_address = "your.public.ip"
-}
-```
-
-#### Transit Gateway
-
-```hcl
-module "transit_gateway" {
-  source = "./transit_gateway"
-
-  name = "main-tgw"
-  
-  vpc_attachments = {
-    vpc1 = {
-      vpc_id     = module.vpc1.vpc_id
-      subnet_ids = module.vpc1.private_subnet_ids
-    }
-  }
-}
-```
-
-## Common Commands
-
-### View Current State
-
-```bash
-terraform show
-```
-
-### View Outputs
-
-```bash
-terraform output
-```
-
-### Update Infrastructure
-
-```bash
-terraform plan
-terraform apply
-```
-
-### Destroy Infrastructure
+## 6. Tear down
 
 ```bash
 terraform destroy
 ```
 
-### Format Code
-
-```bash
-terraform fmt -recursive
-```
-
-### Validate Configuration
-
-```bash
-terraform validate
-```
-
-## Access Your Resources
-
-### View VPC
-
-```bash
-aws ec2 describe-vpcs --filters "Name=tag:Name,Values=*your-project*"
-```
-
-### View EKS Cluster (if created)
-
-```bash
-aws eks list-clusters
-aws eks update-kubeconfig --name your-cluster-name --region us-east-1
-kubectl get nodes
-```
-
-### View RDS Endpoint
-
-```bash
-terraform output rds_endpoint
-```
-
-### View S3 Buckets
-
-```bash
-aws s3 ls | grep your-project
-```
+`starter` destroys cleanly. `production` and `regulated` enable deletion protection on the load balancer and
+database on purpose. To remove them, first apply with
+`overrides = { alb_deletion_protect = false, rds_deletion_protect = false }`. Note that `production` and
+`regulated` take a final RDS snapshot.
 
 ## Troubleshooting
 
-### Issue: Terraform Init Fails
-
-**Solution**: Check your AWS credentials and backend configuration.
-
-```bash
-aws sts get-caller-identity
-```
-
-### Issue: S3 Bucket Name Conflicts
-
-**Solution**: S3 bucket names must be globally unique. Update the bucket names in your environment file.
-
-### Issue: Resource Quota Exceeded
-
-**Solution**: Request limit increases in the AWS Service Quotas console.
-
-### Issue: Permission Denied
-
-**Solution**: Ensure your IAM user/role has sufficient permissions. See README for required permissions.
-
-### Issue: State Lock
-
-**Solution**: If using S3 backend with DynamoDB lock:
-
-```bash
-# View locks
-aws dynamodb scan --table-name terraform-lock-table
-
-# If needed, manually release the lock (use with caution)
-terraform force-unlock <lock-id>
-```
-
-## Next Steps
-
-1. **Review Security**: Run security scanning tools
-   ```bash
-   tfsec .
-   checkov -d .
-   ```
-
-2. **Set Up CI/CD**: Configure GitHub Actions or GitLab CI for automated deployments
-
-3. **Enable Monitoring**: Configure CloudWatch dashboards and alarms
-
-4. **Set Up Backups**: Verify automated backup configurations
-
-5. **Document Changes**: Keep track of customizations
-
-6. **Join Community**: Participate in discussions and contribute
-
-## Best Practices
-
-1. **Never Commit Secrets**: Use Secrets Manager or environment variables
-2. **Use Remote State**: Store state in S3 with DynamoDB locking
-3. **Version Control**: Commit infrastructure changes with descriptive messages
-4. **Test Changes**: Always run `terraform plan` before `apply`
-5. **Use Workspaces**: Separate dev, staging, and production
-6. **Tag Resources**: Use consistent tagging for cost allocation
-7. **Review Costs**: Monitor AWS costs regularly
-8. **Backup State**: Regularly backup your Terraform state file
-9. **Document Customizations**: Keep notes on why changes were made
-10. **Stay Updated**: Keep Terraform and providers up to date
-
-## Example: Complete Dev Environment
-
-Here's a complete example for a development environment:
-
-```bash
-# 1. Clone and configure
-git clone https://github.com/yourusername/gabriel-aws-infrastructure.git
-cd gabriel-aws-infrastructure
-
-# 2. Edit vars_enviro_dev.tf
-# Update project_name, S3 bucket names, and domain
-
-# 3. Initialize
-terraform init
-
-# 4. Create workspace
-terraform workspace new dev
-
-# 5. Plan
-terraform plan -out=tfplan
-
-# 6. Apply
-terraform apply tfplan
-
-# 7. View outputs
-terraform output
-
-# 8. Access resources
-aws eks update-kubeconfig --name my-cluster --region us-east-1
-kubectl get all --all-namespaces
-```
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/gabriel-aws-infrastructure/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/gabriel-aws-infrastructure/discussions)
-- **Documentation**: [Project Wiki](https://github.com/yourusername/gabriel-aws-infrastructure/wiki)
-
-## Additional Resources
-
-- [Terraform Documentation](https://www.terraform.io/docs)
-- [AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/)
-
----
-
-Happy Infrastructure as Code! 🚀
+| Symptom | Fix |
+|---------|-----|
+| `Profile 'production' requires HTTPS...` | Add `domain`, or use `profile = "starter"` while experimenting |
+| `BucketAlreadyExists` | Bucket names include your account ID; another stack in the account uses the same `name` + `environment`. Change one of them |
+| GuardDuty / Config / Security Hub "already exists" | Another stack manages account-level services. Set `account_baseline = false` here |
+| Targets unhealthy, tasks restarting | Check `health_check_path` returns 2xx/3xx and `port` matches the container; read logs in `/ecs/<name>-<env>/<service>` |
+| ECS tasks cannot pull images | Private subnets need egress: keep a NAT (`nat_mode`) or enable `interface_endpoints` |
+| Certificate stuck in validation | `zone_id` must be the public hosted zone that serves `domain.name` |

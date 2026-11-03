@@ -401,20 +401,21 @@ infracost breakdown --path tfplan
 | `staging` | Staging | staging-account | Yes | No |
 | `main` | Production | prod-account | No | Yes (required) |
 
-## Terraform Workspaces
+## Environments and State
 
-Use Terraform workspaces aligned with branches:
+This repository is a module; it holds no environment configuration or state. Each environment is a separate
+root configuration (in your infrastructure repo) that calls the module with its own state key:
 
-```bash
-# Development branch → dev workspace
-terraform workspace select dev
-
-# Staging branch → staging workspace
-terraform workspace select staging
-
-# Main branch → prod workspace
-terraform workspace select prod
 ```
+live/
+├── dev/main.tf       # module "platform" { profile = "starter",    environment = "dev",     source = "...?ref=v1.2.0" }
+├── staging/main.tf   # module "platform" { profile = "production", environment = "staging", source = "...?ref=v1.2.0" }
+└── prod/main.tf      # module "platform" { profile = "production", environment = "prod",    source = "...?ref=v1.1.0" }
+```
+
+- Each root has its own backend key (for example `acme/dev.tfstate`), ideally in its own AWS account.
+- Promote a module change by bumping `?ref=` in dev first, then staging, then prod.
+- Release by tagging `main` (`vMAJOR.MINOR.PATCH`); never point an environment at a branch.
 
 ## CI/CD Integration
 
