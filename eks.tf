@@ -1,51 +1,41 @@
-# EKS Cluster Root Module
-# Uncomment to enable EKS cluster
+# ============================================
+# EKS  (stack includes "eks")
+# ============================================
+# API endpoint is private unless eks.public_access_cidrs is set (or the starter profile, which opens it
+# publicly so you can kubectl without a VPN). Reach a private endpoint through client-vpn or transit-gateway.
+
+locals {
+  eks_public = local.has.eks && (length(var.eks.public_access_cidrs) > 0 || local.s.eks_public_endpoint)
+}
 
 module "eks" {
-  source = "./eks"
+  source = "./modules/eks"
+  count  = local.has.eks ? 1 : 0
 
-  cluster_name    = "${local.project_name}-eks-cluster"
-  cluster_version = "1.28"
-  
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
-  
+  cluster_name    = local.prefix
+  cluster_version = var.eks.version
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.private_subnet_ids
+
+  endpoint_private_access = true
+  endpoint_public_access  = local.eks_public
+  public_access_cidrs     = length(var.eks.public_access_cidrs) > 0 ? var.eks.public_access_cidrs : ["0.0.0.0/0"]
+
   node_groups = {
     general = {
-      desired_size   = 2
-      min_size       = 1
-      max_size       = 4
-      instance_types = ["t3.medium"]
+      instance_types = var.eks.instance_types
+      min_size       = var.eks.min_size
+      desired_size   = var.eks.desired_size
+      max_size       = var.eks.max_size
+      capacity_type  = var.profile == "starter" ? "SPOT" : "ON_DEMAND"
     }
-    # Add more node groups as needed
   }
-  
-  enable_irsa               = true
-  enable_encryption         = true
-  enable_container_insights = true
+
+  enable_encryption            = true
+  enable_irsa                  = true
   enable_control_plane_logging = true
-  
+  log_retention_days           = local.s.log_retention
+  enable_container_insights    = local.s.ecs_container_insights
+
   tags = local.tags
-}
-
-# Outputs
-output "eks_cluster_id" {
-  description = "EKS cluster ID"
-  value       = try(module.eks.cluster_id, null)
-}
-
-output "eks_cluster_endpoint" {
-  description = "EKS cluster endpoint"
-  value       = try(module.eks.cluster_endpoint, null)
-}
-
-output "eks_cluster_name" {
-  description = "EKS cluster name"
-  value       = try(module.eks.cluster_name, null)
-}
-
-output "eks_kubeconfig" {
-  description = "Kubectl config for EKS cluster"
-  value       = try(module.eks.kubeconfig, null)
-  sensitive   = true
 }

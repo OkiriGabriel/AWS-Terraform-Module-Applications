@@ -18,7 +18,9 @@ A comprehensive, production-ready Terraform boilerplate for deploying complete A
 - [Usage Examples](#usage-examples)
 - [Configuration](#configuration)
 - [Security](#security)
+- [Upgrade Notes](#upgrade-notes)
 - [Monitoring & Observability](#monitoring--observability)
+- [CI/CD](#cicd)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -34,9 +36,13 @@ A comprehensive, production-ready Terraform boilerplate for deploying complete A
 - **Container Registry**: ECR repositories with lifecycle policies
 
 ### Security & Compliance
-- **AWS GuardDuty**: Threat detection and continuous security monitoring
+- **Security Baseline**: Multi-region CloudTrail (KMS, log file validation), CIS Benchmark alarms, IAM Access Analyzer, EBS encryption by default, Security Hub FSBP + CIS v3.0 standards
+- **AWS GuardDuty**: Threat detection and continuous security monitoring (incl. RDS login monitoring in prod)
 - **AWS Inspector**: Automated vulnerability assessment
-- **Secrets Management**: AWS Secrets Manager integration
+- **AWS WAF**: Managed rule sets, SQLi protection, rate limiting and geo blocking on the ALB (prod)
+- **Secrets Management**: RDS master password generated and rotated by RDS in Secrets Manager (never in Terraform state)
+- **Keyless CI/CD**: GitHub Actions OIDC deploy role, branch-scoped and least-privilege
+- **Hardened compute**: IMDSv2 enforced, encrypted gp3 root volumes, SSM Session Manager instead of SSH
 - **SSL/TLS**: ACM certificates with automatic renewal
 - **Security Groups**: Layered security with principle of least privilege
 - **VPN**: Site-to-Site VPN and Client VPN for secure access
@@ -51,7 +57,8 @@ A comprehensive, production-ready Terraform boilerplate for deploying complete A
 - **X-Ray**: Distributed tracing (optional)
 
 ### DevOps & Automation
-- **CI/CD Ready**: ECR integration for container workflows
+- **CI/CD Ready**: ECR integration, OIDC deploy role, CI with fmt/validate/TFLint/Gitleaks/Checkov
+- **Safe Deployments**: ECS deployment circuit breaker with automatic rollback, CPU + memory autoscaling
 - **Multi-Environment**: Separate dev/staging/prod configurations
 - **Backup & DR**: Automated backups with point-in-time recovery
 - **Auto Scaling**: Dynamic resource scaling based on demand
@@ -188,6 +195,9 @@ Your AWS user/role needs permissions for:
 ├── vpn/                       # VPN connections
 ├── transit_gateway/           # Transit Gateway setup
 ├── *.tf                       # Root infrastructure configurations
+├── security_baseline.tf       # CloudTrail, CIS alarms, Access Analyzer, EBS encryption, Security Hub standards
+├── security_enhancements.tf   # WAF, Security Hub, AWS Config, VPC Flow Logs
+├── cicd_oidc.tf               # GitHub Actions OIDC deploy role (opt-in)
 ├── vars_enviro_dev.tf         # Development variables
 ├── vars_enviro_prod.tf        # Production variables
 ├── examples.tf                # Usage examples for all modules
@@ -222,6 +232,8 @@ Your AWS user/role needs permissions for:
 - **Inspector** - Automated security assessment
 - **Secrets Manager** - Secure credential storage
 - **ACM** - SSL/TLS certificate management
+- **Security Baseline** - CloudTrail, CIS Benchmark alarms, IAM Access Analyzer, Security Hub standards
+- **WAF** - Managed rules, SQLi protection, rate limiting (prod ALB)
 
 ### Monitoring
 - **CloudWatch** - Metrics, logs, and alarms
@@ -423,6 +435,46 @@ module "transit_gateway" {
 }
 ```
 
+### Account Security Baseline
+
+`security_baseline.tf` is on by default in every workspace. Tune it per environment with a
+`security_features` block in `vars_enviro_*.tf` (any key you omit keeps its default from `locals.tf`):
+
+```hcl
+locals {
+  prod = {
+    # ...
+    security_features = {
+      enable_cloudtrail             = true   # multi-region trail, KMS-encrypted, log file validation
+      cloudtrail_log_retention_days = 365    # CloudWatch Logs retention; S3 copy moves to Glacier after 90 days
+      enable_cis_alarms             = true   # 13 CIS metric-filter alarms -> alerts SNS topic
+      enable_access_analyzer        = true
+      enable_ebs_default_encryption = true   # account/region singleton: enable in ONE workspace per account
+      enable_security_hub_standards = true   # prod only: AWS FSBP + CIS v3.0.0
+      alert_email                   = "secops@example.com"  # confirms via email after apply
+      github_repository             = "OkiriGabriel/AWS-Terraform-Module-Applications"  # enables OIDC deploy role
+      create_github_oidc_provider   = true   # false if the account already has the GitHub OIDC provider
+    }
+  }
+}
+```
+
+CIS alarms cover: unauthorized API calls, console sign-in without MFA, root account usage, IAM policy
+changes, CloudTrail config changes, console auth failures, KMS key disable/deletion, S3 bucket policy
+changes, security group / NACL / network gateway / route table / VPC changes.
+
+### GitHub Actions OIDC Deploy Role
+
+Setting `security_features.github_repository` creates `cicd_oidc.tf`'s role, which only workflows on
+`main` can assume. It can push to the three ECR repos, register task definitions, update services in the
+prod cluster, and pass `<env>-*` roles to ECS tasks. Nothing else.
+
+1. Apply, then copy output `github_actions_deploy_role_arn` into the repo secret `AWS_DEPLOY_ROLE_ARN`.
+2. Rename `.github/workflows/deploy-ecs.yml.txt` to `deploy-ecs.yml`.
+3. Delete the old `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` secrets and deactivate that key.
+
+Override `github_oidc_subjects` (e.g. `["repo:owner/repo:environment:production"]`) to narrow it further.
+
 ### Complete Security Suite
 
 ```hcl
@@ -492,24 +544,64 @@ locals {
 
 ### Security Features
 
-- **Network Isolation**: Private subnets for application tier
-- **Security Groups**: Layered security with least privilege
-- **Encryption**: At-rest and in-transit encryption
-- **Secret Management**: AWS Secrets Manager for credentials
-- **Threat Detection**: GuardDuty for anomaly detection
-- **Vulnerability Scanning**: Inspector for OS/application scanning
-- **VPN Access**: Secure remote access via VPN
-- **Network Monitoring**: VPC Flow Logs for traffic analysis
+| Area | Control |
+|------|---------|
+| Audit | Multi-region CloudTrail, KMS-encrypted, log file validation, TLS-only bucket, streamed to CloudWatch Logs |
+| Detection | GuardDuty (S3, EBS malware, RDS logins), Inspector, Security Hub (FSBP + CIS v3.0), AWS Config, IAM Access Analyzer, 13 CIS alarms |
+| Network | Private app/data tiers, VPC Flow Logs, WAF on the ALB, no SSH from `0.0.0.0/0` (validation blocks it) |
+| Edge / TLS | ALB `ELBSecurityPolicy-TLS13-1-2-2021-06`, HTTP to HTTPS redirect, invalid headers dropped, CloudFront TLSv1.2_2021 |
+| Data at rest | RDS storage encryption, EFS, S3 (SSE-S3 or SSE-KMS), DynamoDB, backup vault KMS, EBS encryption by default |
+| Data in transit | S3 bucket policies deny non-TLS requests; EFS mounts use TLS from ECS tasks |
+| Secrets | RDS master password managed and rotated by RDS in Secrets Manager; IAM DB auth enabled |
+| Compute | IMDSv2 required, encrypted gp3 root volumes, SSM Session Manager (no SSH keys needed) |
+| S3 | Public access block, ACLs disabled (`BucketOwnerEnforced`), versioning on backups/configs |
+| CI/CD | OIDC deploy role (no static keys), Gitleaks secret scan, Checkov SARIF in GitHub code scanning |
+
+### Shell Access Without SSH
+
+Port 22 is closed everywhere by default. Use SSM Session Manager:
+
+```bash
+aws ssm start-session --target i-0123456789abcdef0
+
+# Reach Grafana on the dev monitoring box without opening any port:
+aws ssm start-session --target i-0123456789abcdef0 \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["3000"],"localPortNumber":["3000"]}'
+```
+
+If you need direct access, list specific CIDRs. `0.0.0.0/0` is rejected by variable validation:
+- ECS hosts: `security.ssh_ingress_cidrs = ["203.0.113.10/32"]`
+- Dev monitoring UIs: `monitoring.admin_cidr_blocks = ["203.0.113.10/32"]`
 
 ### Best Practices
 
-1. **Never commit secrets**: Use Secrets Manager or environment variables
-2. **Enable MFA**: For AWS account access
-3. **Use IAM roles**: Instead of access keys where possible
-4. **Regular updates**: Keep Terraform and providers up to date
-5. **Review security groups**: Regularly audit and minimize access
-6. **Enable GuardDuty**: Continuous threat monitoring
-7. **Implement backups**: Regular automated backups with testing
+1. **Never commit secrets**: Gitleaks runs on every push and PR
+2. **Enable MFA**: The CIS alarm `console-signin-without-mfa` fires when someone skips it
+3. **Use IAM roles**: The OIDC role replaces CI access keys
+4. **Subscribe to alerts**: Set `security_features.alert_email` and confirm the subscription
+5. **Review Security Hub**: Triage FSBP/CIS findings weekly
+6. **Test restores**: AWS Backup runs daily/weekly; restore-test on a schedule
+
+## Upgrade Notes
+
+Read these before you run `terraform apply` on an existing environment. Always review `terraform plan` first.
+
+- **RDS storage encryption** (`storage_encrypted = true`) cannot be enabled in place. On an existing unencrypted
+  prod DB the plan shows a replacement; deletion protection makes that apply fail instead of destroying data.
+  To migrate: snapshot, copy the snapshot with encryption, restore, cut over. Until then you can set
+  `rds.storage_encrypted = false` in `vars_enviro_prod.tf`.
+- **RDS settings are now honored.** The module used to hardcode `skip_final_snapshot = true`, the backup windows,
+  and Multi-AZ. Prod now takes a final snapshot on destroy and keeps Multi-AZ (`rds.multi_az = true`).
+- **RDS master password** moves to an RDS-managed Secrets Manager secret (output `database_master_secret_arn`).
+  Applications that read the old password must read that secret instead.
+- **GuardDuty**: prod used to declare a second detector in `security_enhancements.tf`, which AWS rejects (one per
+  region). Only `module.guardduty`'s detector remains. If the old one is in your state, run
+  `terraform state rm aws_guardduty_detector.example` before applying.
+- **AWS Config bucket policy** moved into the S3 module. A `moved` block handles the state move automatically.
+- **SSH** is closed on ECS hosts and the monitoring server. Dev monitoring UIs are no longer public unless you set
+  `monitoring.admin_cidr_blocks`.
+- **ECS backend/admin** task definitions no longer get an empty EFS volume (that broke task registration).
 
 ## Monitoring & Observability
 
@@ -531,7 +623,26 @@ Default alarms configured for:
 - ALB 5xx errors
 - ECS service failures
 
-Configure SNS topics in your environment files for notifications.
+Configure SNS topics in your environment files for notifications. Set `security_features.alert_email`
+to subscribe an inbox to the shared alerts topic (CIS alarms, DR alarms, service alarms).
+
+## CI/CD
+
+`.github/workflows/terraform-ci.yml` runs on pushes and PRs to `main`, `development`, `staging`:
+
+| Job | What it checks |
+|-----|----------------|
+| Terraform Validation | `fmt -check`, `init`, `validate` for both dev and prod workspaces, TFLint, module layout |
+| Secret Scanning | Gitleaks over full git history |
+| IaC Security Scanning | Checkov, results uploaded to the repository's **Security > Code scanning** tab |
+
+Run the same checks locally:
+
+```bash
+terraform fmt -recursive
+terraform validate
+checkov -d . --framework terraform
+```
 
 ## Contributing
 
@@ -595,8 +706,12 @@ When creating new modules:
 ## Roadmap
 
 - [ ] Add AWS App Mesh support
-- [ ] Implement AWS Backup module
-- [ ] Add AWS WAF configuration
+- [x] AWS Backup plan with KMS-encrypted vault
+- [x] AWS WAF configuration
+- [x] CloudTrail + CIS Benchmark alarms
+- [x] GitHub Actions OIDC deploy role
+- [ ] ElastiCache replication group with at-rest + in-transit encryption and AUTH
+- [ ] ALB access logs to S3
 - [ ] Create Step Functions module
 - [ ] Add AWS Lake Formation support
 - [ ] Implement multi-region support
