@@ -15,7 +15,7 @@ CLUSTER=$PREFIX
 ## 1. Before go-live
 
 | Gate | Evidence |
-|------|----------|
+|:-----|:---------|
 | Alerts reach a human | SNS email subscription confirmed; a test alarm received (section 8.1) |
 | Database restore drill | Section 4.1 completed; actual RTO/RPO recorded |
 | Deployment rollback drill | Section 3.2 completed in a non-production stack |
@@ -121,7 +121,7 @@ current one (`aws s3api list-object-versions`, then `aws s3api copy-object` with
 ## 5. Data tier events
 
 | Event | Expected behaviour | Action |
-|-------|--------------------|--------|
+|:------|:-------------------|:-------|
 | RDS Multi-AZ failover | 1-2 minutes of connection errors, same endpoint | Apps must reconnect; verify the `rds-cpu` alarm returns to OK |
 | RDS single-AZ instance failure (`starter`) | Outage until AWS recovers the host or you restore | Section 4.1 |
 | Redis primary failure (2+ nodes) | Replica promoted automatically, same primary endpoint | Check `redis-cpu`/`redis-memory` alarms |
@@ -133,7 +133,7 @@ current one (`aws s3api list-object-versions`, then `aws s3api copy-object` with
 ## 6. Secrets
 
 | Secret | Rotate |
-|--------|--------|
+|:-------|:-------|
 | RDS master password | `aws secretsmanager rotate-secret --secret-id <database.secret_arn>`. Running tasks keep the old value until restarted; force a new deployment of each service afterwards |
 | Redis AUTH token | `terraform apply -replace='module.platform.module.redis[0].random_password.auth'`, then force a new deployment of each service. Test in non-production first |
 | App secrets you reference in `services.*.secrets` | Rotate in Secrets Manager / SSM, then force a new deployment |
@@ -145,7 +145,7 @@ Force a new deployment: `aws ecs update-service --cluster $CLUSTER --service <se
 ## 7. Connectivity
 
 | Problem | Check |
-|---------|-------|
+|:--------|:------|
 | Site-to-site tunnel down | VPC console > Site-to-Site VPN > Tunnel details. Both tunnels must be configured on the customer router (download the config for your device). Confirm the router's public IP equals `vpn.customer_gateway_ip` and IKEv2 + AES/SHA-2 are allowed |
 | Routes missing on-prem to VPC | With BGP, check the router advertises its prefixes. With `static_routes`, the list must include the on-prem CIDRs |
 | Client VPN users connect but reach nothing | They are authorized for the VPC CIDR only; the target's security group must allow the Client VPN group (the data tier already does) |
@@ -167,7 +167,7 @@ The email should arrive within a minute; the alarm returns to OK on its next eva
 ### 8.2 Responding
 
 | Alert | First steps |
-|-------|-------------|
+|:------|:------------|
 | `*-no-healthy-targets` | `aws ecs describe-services` events; the service's log group; the health check path; whether a deploy just ran (roll back, section 3.2) |
 | `alb-5xx` / `targets-5xx` | ELB 5xx usually means no healthy targets or timeouts; target 5xx means application errors. Check the logs |
 | `cis-root-account-usage` | Treat as an incident until the root user activity is explained. Check CloudTrail for the event |
@@ -184,7 +184,7 @@ The email should arrive within a minute; the alarm returns to OK on its next eva
 Fill these in for your team and keep them current:
 
 | Item | Value |
-|------|-------|
+|:-----|:------|
 | On-call owner (primary / secondary) | |
 | Escalation path | |
 | Incident channel | |

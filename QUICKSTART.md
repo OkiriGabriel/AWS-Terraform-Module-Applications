@@ -58,7 +58,7 @@ When it finishes, `summary.url` serves nginx from Fargate. `summary.estimated_mo
 Each step is one change and another `terraform apply`:
 
 | Want | Change |
-|------|--------|
+|:-----|:-------|
 | Your own app | Push an image to `ecr_repositories["web"]`, remove `image` from the service (or set your image URI) |
 | A database | `stack = ["ecs", "rds"]`; services receive `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD` automatically |
 | A cache | add `"redis"`; services receive `REDIS_HOST` and `REDIS_AUTH_TOKEN` |
@@ -100,7 +100,7 @@ database on purpose. To remove them, first apply with
 ## Troubleshooting
 
 | Symptom | Fix |
-|---------|-----|
+|:--------|:----|
 | `Profile 'production' requires HTTPS...` | Add `domain`, or use `profile = "starter"` while experimenting |
 | `BucketAlreadyExists` | Bucket names include your account ID; another stack in the account uses the same `name` + `environment`. Change one of them |
 | GuardDuty / Config / Security Hub "already exists" | Another stack manages account-level services. Set `account_baseline = false` here |
