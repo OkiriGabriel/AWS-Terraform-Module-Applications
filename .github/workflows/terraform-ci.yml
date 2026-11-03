@@ -2,25 +2,31 @@ name: Terraform Validation
 
 on:
   pull_request:
-    branches: 
+    branches:
       - main
       - development
       - staging
   push:
-    branches: 
+    branches:
       - main
       - development
       - staging
 
 permissions:
   contents: read
-  pull-requests: write  # Allow commenting on PRs
+
+concurrency:
+  group: terraform-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     name: Terraform Validation
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      pull-requests: write # comment results on PRs
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -28,64 +34,58 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ~1.9  # Use latest 1.9.x version
+          terraform_version: 1.15.8 # version the test suite is verified on (mocks need >= 1.7)
 
       - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -check -recursive
-        continue-on-error: true
+        run: terraform fmt -check -recursive -diff
 
-      - name: Terraform Init
+      - name: Terraform Init (module)
         id: init
-        run: terraform init -backend=false
+        run: terraform init -backend=false -input=false
 
-      - name: Terraform Validate
+      - name: Terraform Validate (module)
         id: validate
         run: terraform validate -no-color
 
-      - name: Check for Secrets
+      # Runs every profile end-to-end and checks each guardrail against a mocked AWS provider.
+      # No AWS credentials needed, nothing is created.
+      - name: Terraform Test (module)
+        id: test
+        run: terraform test -no-color
+
+      - name: Terraform Test (organization guardrails)
+        working-directory: modules/organization
         run: |
-          echo "Checking for potential secrets in code..."
-          if grep -rE '(AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY|password\s*=\s*["\047])' --include='*.tf' --exclude-dir='.terraform' .; then
-            echo "⚠️ WARNING: Potential secrets found in Terraform files!"
-            echo "Please remove hardcoded secrets and use Secrets Manager or variables."
-            exit 1
-          fi
-          echo "✅ No hardcoded secrets detected"
+          terraform init -backend=false -input=false
+          terraform test -no-color
+
+      - name: Validate examples
+        run: |
+          for e in examples/*/; do
+            echo "::group::$e"
+            (cd "$e" && terraform init -backend=false -input=false >/dev/null && terraform validate -no-color)
+            echo "::endgroup::"
+          done
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: TFLint
+        run: |
+          tflint --init
+          tflint --recursive --format compact --minimum-failure-severity=error
 
       - name: Validate Module Structure
         run: |
-          echo "Validating module structure..."
-          
-          # Check that each module directory has required files
-          for module_dir in eks guardduty inspector vpc_peering vpn transit_gateway vpc alb rds; do
-            if [ -d "$module_dir" ]; then
-              if [ ! -f "$module_dir/main.tf" ]; then
-                echo "❌ Missing main.tf in $module_dir"
-                exit 1
+          for module_dir in modules/*/; do
+            for f in main.tf variables.tf outputs.tf; do
+              if [ ! -f "$module_dir$f" ]; then
+                echo "❌ Missing $f in $module_dir"; exit 1
               fi
-              if [ ! -f "$module_dir/variables.tf" ]; then
-                echo "❌ Missing variables.tf in $module_dir"
-                exit 1
-              fi
-              if [ ! -f "$module_dir/outputs.tf" ]; then
-                echo "❌ Missing outputs.tf in $module_dir"
-                exit 1
-              fi
-              echo "✅ $module_dir module structure is valid"
-            fi
+            done
+            echo "✅ $module_dir"
           done
-
-      - name: Validate Terraform Syntax
-        run: |
-          echo "Running additional syntax checks..."
-          
-          # Check for common issues
-          if grep -r 'terraform_remote_state' --include='*.tf' . 2>/dev/null; then
-            echo "ℹ️ Found terraform_remote_state usage - ensure backend is properly configured"
-          fi
-          
-          echo "✅ Syntax validation complete"
 
       - name: Comment PR
         if: github.event_name == 'pull_request' && always()
@@ -95,9 +95,10 @@ jobs:
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            
-            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            
+            #### Terraform Test 🧪\`${{ steps.test.outcome }}\`
+
+            *Pusher: ${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -105,23 +106,43 @@ jobs:
               body: output
             })
 
-  security:
-    name: Security Scanning
+  secrets:
+    name: Secret Scanning
     runs-on: ubuntu-latest
-    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan full history, not just the tip
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  security:
+    name: IaC Security Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to GitHub code scanning
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          soft_fail: true  # Don't fail the build, just report
-          
       - name: Run Checkov
         uses: bridgecrewio/checkov-action@v12
         with:
           directory: .
           framework: terraform
-          soft_fail: true  # Don't fail the build, just report
-          output_format: cli
+          soft_fail: true # report findings in the Security tab without blocking merges
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+
+      - name: Upload Checkov SARIF
+        if: always() && hashFiles('results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
+          category: checkov

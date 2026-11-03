@@ -67,9 +67,8 @@ Thumbs.db
 # Log files
 *.log
 
-# Test directories
+# Local test scratch (the module's own tests live in tests/ and are tracked)
 test/
-tests/
 .terraform.d/
 
 # Environment files
