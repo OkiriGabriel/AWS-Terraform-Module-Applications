@@ -49,7 +49,7 @@ module "platform" {
   }
 
   alert_email       = "oncall@example.com"
-  github_repository = "OkiriGabriel/AWS-Terraform-Module-Applications"
+  github_repository = "acme/app" # the application repo whose main branch deploys
 
   # Any profile default can be changed without forking:
   overrides = {

@@ -14,7 +14,7 @@ provider "aws" {
 
 module "organization" {
   source = "../../modules/organization"
-  # In your own repo: source = "git::https://github.com/OkiriGabriel/AWS-Terraform-Module-Applications.git//modules/organization?ref=v1.0.0"
+  # In your own repo: source = "OkiriGabriel/platform/aws//modules/organization" and version = "~> 1.0"
 
   name                 = "acme"
   organizational_units = ["Security", "Workloads", "Sandbox"]

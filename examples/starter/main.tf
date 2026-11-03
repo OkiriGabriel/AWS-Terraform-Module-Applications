@@ -13,7 +13,7 @@ provider "aws" {
 }
 
 module "platform" {
-  # In your own repo: source = "git::https://github.com/OkiriGabriel/AWS-Terraform-Module-Applications.git?ref=v1.0.0"
+  # In your own repo: source = "OkiriGabriel/platform/aws" and version = "~> 1.0"
   source = "../../"
 
   name        = "demo"
